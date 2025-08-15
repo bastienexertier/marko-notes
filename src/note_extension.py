@@ -9,7 +9,7 @@ class Note(block.BlockElement):
 	priority = 7
 	_prefix = r" {,3}>[^\n\S]?"
 
-	pattern: re.Pattern = re.compile(r" {,3}>\s+\[!(NOTE|TIP|IMPORTANT|CAUTION|WARNING)\]\s+(.*)", re.IGNORECASE)
+	pattern: re.Pattern = re.compile(r" {,3}>[^\S\n]+\[!(NOTE|TIP|IMPORTANT|CAUTION|WARNING)\][^\S\n]*([^\n]*)", re.IGNORECASE)
 
 	def __init__(self, match: re.Match[str]) -> None:
 		self.note_type = match.group(1)
