@@ -1,27 +1,18 @@
 
 from pathlib import Path
 
-from marko import Markdown, Renderer
+from marko import Markdown
 from marko.ext import codehilite
 
-import include_extension
-import note_extension
-import heading_section_extension
+import src.include_extension as include_extension
+import src.note_extension as note_extension
+import src.heading_section_extension as heading_section_extension
 
-
-# class CustomRenderer(Renderer):
-
-# 	def render_heading(self, element):
-# 		return f'<section>{self.render_children(element)}</section>'
 
 
 def main(args) -> None:
 
-	# from rich import inspect
-	# inspect(Renderer, all=True)
-
 	md = Markdown(
-		# renderer=CustomRenderer,
 		extensions=[
 			note_extension.make_extension(),
 			include_extension.make_extension(),
