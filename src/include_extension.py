@@ -1,16 +1,34 @@
 import re
+from contextlib import contextmanager
+from pathlib import Path
 from typing_extensions import override
 
 from marko import block
+from marko.element import Element
 from marko.helpers import MarkoExtension
 from marko.source import Source
 
+class ParserMixin:
+
+	def __init__(self):
+		super().__init__()
+		self.__paths: list[Path] = [Path()]
+
+	def path(self) -> Path:
+		return self.__paths[-1]
+
+	def base_path(self) -> Path:
+		return self.__paths[0]
+
+	@contextmanager
+	def move(self, new_path: str):
+		self.__paths.append(Path(new_path))
+		yield self
+		self.__paths.pop(-1)
+
 class Include(block.BlockElement):
 
-	pattern: re.Pattern[str] = re.compile(r"::include\{file=(\S*)\}")
-
-	def __init__(self, match: re.Match[str]) -> None:
-		self.location: str = match.group(1)
+	pattern: re.Pattern[str] = re.compile(r"::include\{file=([^\s#\}]+)\}")
 
 	@classmethod
 	@override
@@ -20,15 +38,27 @@ class Include(block.BlockElement):
 	@classmethod
 	@override
 	def parse(cls, source: Source) -> block.Document:
-		with open(source.match.group(1)) as file:
-			file_content = source.parser.parse(file.read())
+		location = source.match.group(1)
+
+		if location[0] == '/':
+			file_path = source.parser.base_path() / location.removeprefix('/')
+		else:
+			file_path = source.parser.path() / location
+
+
+		with file_path.open() as file:
+			with source.parser.move(file_path.parent):
+				document = source.parser.parse(file.read())
+
 		source.consume()
-		return file_content
+
+		return document
 
 
 
 def make_extension() -> MarkoExtension:
 	return MarkoExtension(
 		elements=[Include],
-		renderer_mixins=[]
+		parser_mixins=[ParserMixin],
+		renderer_mixins=[],
 	)
