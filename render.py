@@ -7,6 +7,7 @@ from marko.ext import codehilite, toc
 import src.include_extension as include_extension
 import src.note_extension as note_extension
 import src.heading_section_extension as heading_section_extension
+import src.jira_extension as jira_extension
 
 
 
@@ -18,6 +19,7 @@ def main(args) -> None:
 			include_extension.make_extension(),
 			codehilite.make_extension(),
 			heading_section_extension.make_extension(),
+			jira_extension.make_extension(),
 			toc.make_extension('<li><ul>', '</li></ul>'),
 		]
 	)

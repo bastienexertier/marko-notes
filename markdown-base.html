@@ -35,5 +35,18 @@
 			</div>
 		</main>
 	</div>
+	<script>
+		document.querySelectorAll("table").forEach(function (table) {
+			// Create the wrapper div
+			var wrapper = document.createElement("div");
+			wrapper.className = "table-wrapper";
+
+			// Insert the wrapper before the table
+			table.parentNode.insertBefore(wrapper, table);
+
+			// Move the table inside the wrapper
+			wrapper.appendChild(table);
+	 	});
+	</script>
 </body>
 </html>
