@@ -74,9 +74,6 @@ class IncludeCsv(IncludeBase):
 
 	pattern: re.Pattern[str] = re.compile(r"::include\{file=([^\s\}\.]+\.csv)\}")
 
-	def __init__(self, rows: list[block.BlockElement]) -> None:
-		self.children = rows
-
 	@classmethod
 	@override
 	def parse(cls, source: Source) -> Table:
@@ -114,7 +111,32 @@ class TableRenderer(Renderer):
 	def render_table(self, element: Table) -> str:
 		return f'<table>{self.render_children(element)}</table>'
 
+class Mermaid(block.BlockElement):
+	virtual = True
+
+	def __init__(self, content: str) -> None:
+		self.content = content
 		
+
+class IncludeMermaid(IncludeBase):
+
+	pattern: re.Pattern[str] = re.compile(r"::include\{file=([^\s\}\.]+\.mermaid)\}")
+
+	@classmethod
+	@override
+	def parse(cls, source: Source) -> Mermaid:
+
+		file_path = cls.get_location(source)
+		with file_path.open('r', encoding='utf-8') as file:
+			mermaid = Mermaid(file.read())
+
+		source.consume()
+		return mermaid
+
+class MermaidRenderer(Renderer):
+
+	def render_mermaid(self, element: Mermaid) -> str:
+		return f'<pre class="mermaid">{element.content}</pre>'
 
 class Include(IncludeBase):
 
@@ -143,7 +165,7 @@ class Include(IncludeBase):
 
 def make_extension() -> MarkoExtension:
 	return MarkoExtension(
-		elements=[IncludeCsv, Include],
+		elements=[IncludeCsv, IncludeMermaid, Include],
 		parser_mixins=[ParserMixin],
-		renderer_mixins=[TableRenderer],
+		renderer_mixins=[TableRenderer, MermaidRenderer],
 	)
