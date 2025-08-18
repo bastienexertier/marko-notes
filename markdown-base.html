@@ -4,8 +4,8 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Markdown</title>
-	<link rel="stylesheet" type="text/css" href="pygments.css">
-	<link rel="stylesheet" type="text/css" href="shibuya.css">
+	<link rel="stylesheet" type="text/css" href="{{ static }}/pygments.css">
+	<link rel="stylesheet" type="text/css" href="{{ static }}/shibuya.css">
 	<link media="print" rel="stylesheet" type="text/css" href="print.css">
 	<style>
 		table {
@@ -15,6 +15,15 @@
 </head>
 <body class="win">
 	<div class="sy-page sy-container flex mx-auto">
+		<aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+			<div class="sy-lside-inner md:sticky">
+				<div class="sy-scrollbar p-6">
+					<div class="globaltoc">
+						{{ global_toc }}
+					</div>
+				</div>
+			</div>
+		</aside>
 		<aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
 			<button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
 				<i class="i-lucide close"></i>
@@ -46,7 +55,7 @@
 
 			// Move the table inside the wrapper
 			wrapper.appendChild(table);
-	 	});
+		});
 	</script>
 </body>
 </html>
