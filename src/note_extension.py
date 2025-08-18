@@ -1,6 +1,6 @@
 import re
 
-from marko import Markdown, inline, block
+from marko import Markdown, Renderer, inline, block
 from marko.helpers import MarkoExtension
 from marko.source import Source
 
@@ -28,15 +28,15 @@ class Note(block.BlockElement):
 		return note
 
 
-class NoteRenderer:
+class NoteRenderer(Renderer):
 
 	def render_note(self, element: Note) -> str:
 		return f'''
-<div class="admonition {element.note_type.lower()}">
-	<p class="admonition-title">{element.title or element.note_type.upper()}</p>
-	{self.render_children(element)}
-</div>
-'''
+		<div class="admonition {element.note_type.lower()}">
+			<p class="admonition-title">{element.title or element.note_type.upper()}</p>
+			{self.render_children(element)}
+		</div>
+		'''
 
 
 def make_extension():
