@@ -56,6 +56,12 @@
 			// Move the table inside the wrapper
 			wrapper.appendChild(table);
 		});
+		document.querySelectorAll("code").forEach(function (div) {
+			div.addEventListener("click", function() {
+				navigator.clipboard.writeText(this.textContent)
+			});
+			div.style.cursor = 'pointer';
+		});
 	</script>
 </body>
 </html>
