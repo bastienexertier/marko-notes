@@ -43,9 +43,15 @@ def main(args) -> None:
 
 	for element in tree:
 		match element:
-			case prefix_tree.Down(v):
+			case prefix_tree.Down(name, None):
 				res.append('<li class="_expand">')
-				res.append(str(v).replace('-', ' ').title())
+				res.append(str(name).replace('-', ' ').title())
+				res.append('<ul>')
+			case prefix_tree.Down(name, value):
+				res.append('<li class="_expand">')
+				res.append(f'<a href="{Path(dist, *value).with_suffix(".html").absolute().as_uri()}">')
+				res.append(str(name).replace('-', ' ').title())
+				res.append('</a>')
 				res.append('<ul>')
 			case prefix_tree.Up():
 				res.append('</ul>')

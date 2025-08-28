@@ -1,23 +1,22 @@
 
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Union
+from typing import Iterable, Iterator, Optional, Union
+
+V = tuple[str, ...]
 
 @dataclass
 class Down:
-	value: str
-	def __repr__(self) -> str: return f'DOWN<{self.value}>'
+	name: str
+	value: Optional[V]
 
 @dataclass
 class Up:
-	def __repr__(self) -> str: return 'UP'
-
-
-V = tuple[str, ...]
+	...
 
 class Tree:
 
 	def __init__(self, data: Iterable[tuple[str, ...]]) -> None:
-		self.node = Node('')
+		self.node = Node(())
 		for value in data:
 			self.add_value(value)
 
@@ -38,7 +37,7 @@ class Tree:
 				break
 
 			if not (next_node := current.children.get(part)):
-				next_node = Node(part)
+				next_node = Node(value[:index+1])
 				current.children[part] = next_node
 
 			current = next_node
@@ -46,7 +45,7 @@ class Tree:
 
 class Node:
 
-	def __init__(self, value: str) -> None:
+	def __init__(self, value: V) -> None:
 		self.value = value
 		self.members = list[V]()
 		self.children = dict[str, Node]()
@@ -60,9 +59,14 @@ class Node:
 	def walk(self, height: int) -> Iterator[Union[Up, Down, V]]:
 
 		for member in self.members:
-			yield member
+			if not is_main_element(member):
+				yield member
 
 		for name, child in self.children.items():
-			yield Down(name)
+			main_element = next(filter(is_main_element, child.members), None)
+			yield Down(name, main_element)
 			yield from child.walk(height+1)
 			yield Up()
+
+def is_main_element(element: V) -> bool:
+	return len(element) >= 2 and element[-1] == element[-2]
