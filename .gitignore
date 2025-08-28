@@ -1,0 +1,4 @@
+dist/*
+notes/*
+
+*__pycache__*

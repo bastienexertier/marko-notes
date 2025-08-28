@@ -12,7 +12,7 @@ class ParserMixin:
 
 	def __init__(self):
 		super().__init__()
-		self.__paths: list[Path] = [Path()]
+		self.__paths: list[Path] = [Path('notes')]
 
 	def path(self) -> Path:
 		return self.__paths[-1]
@@ -49,14 +49,14 @@ class IncludeBase(block.BlockElement):
 class TableHeader(block.BlockElement):
 	virtual = True
 
-	def __init__(self, value: str) -> None:	
-		self.children = [inline.RawText(value)]
+	def __init__(self, value: str) -> None:
+		self.inline_body = value
 
 class TableData(block.BlockElement):
 	virtual = True
 
-	def __init__(self, value: str) -> None:	
-		self.children = [inline.RawText(value)]
+	def __init__(self, value: str) -> None:
+		self.inline_body = value
 
 class TableRow(block.BlockElement):
 	virtual = True
@@ -138,6 +138,25 @@ class MermaidRenderer(Renderer):
 	def render_mermaid(self, element: Mermaid) -> str:
 		return f'<pre class="mermaid">{element.content}</pre>'
 
+class IncludePicture(IncludeBase):
+
+	pattern: re.Pattern[str] = re.compile(r"::include\{file=([^\s\}\.]+\.(png|jpg))\}")
+
+	def __init__(self, location: Path) -> None:
+		self.location = location
+
+	@classmethod
+	@override
+	def parse(cls, source: Source):
+		file_path = cls.get_location(source)
+		source.consume()
+		return file_path.absolute()
+
+class PictureRenderer:
+
+	def render_include_picture(self, element: IncludePicture) -> str:
+		return f'<img src="{element.location}" />'
+
 class Include(IncludeBase):
 
 	@classmethod
@@ -161,11 +180,51 @@ class Include(IncludeBase):
 
 		return document
 
+class Define(block.BlockElement):
+
+	pattern: re.Pattern[str] = re.compile(r"::define\{([\w\-\_]+)=([^\n\}]*)\}")
+
+	variables: dict[str, block.BlockElement] = {}
+
+	def __init__(self, value: str) -> None:
+		self.inline_body = value
+
+	@classmethod
+	@override
+	def match(cls, source: Source) -> re.Match[str] | None:
+		return source.expect_re(cls.pattern)
+
+	@classmethod
+	@override
+	def parse(cls, source: Source):
+		name = source.match.group(1)
+		value = source.match.group(2)
+		element = cls(value)
+		cls.variables[name] = element
+		source.consume()
+		return element
+
+
+class Interpolation(inline.InlineElement):
+
+	pattern: re.Pattern[str] = re.compile(r"\$([\w\-\_]+)")
+
+	def __init__(self, match: re.Match[str]) -> None:
+		self.children = Define.variables[match.group(1)].children
+
+
+class InterpolationRenderer:
+
+	def render_define(self, element: Define) -> str:
+		return ''
+
+	def render_interpolation(self, element: Interpolation) -> str:
+		return self.render_children(element)
 
 
 def make_extension() -> MarkoExtension:
 	return MarkoExtension(
-		elements=[IncludeCsv, IncludeMermaid, Include],
+		elements=[IncludeCsv, IncludeMermaid, IncludePicture, Include, Define, Interpolation],
 		parser_mixins=[ParserMixin],
-		renderer_mixins=[TableRenderer, MermaidRenderer],
+		renderer_mixins=[TableRenderer, MermaidRenderer, PictureRenderer, InterpolationRenderer],
 	)

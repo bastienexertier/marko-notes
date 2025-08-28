@@ -5,59 +5,10 @@ import shutil
 from marko import Markdown
 from marko.ext import codehilite, toc
 
+import src.prefix_tree as prefix_tree
 import src.include_extension as include_extension
 import src.note_extension as note_extension
-import src.heading_section_extension as heading_section_extension
-import src.jira_extension as jira_extension
 import src.table_extension as table_extension
-import src.strikethrough_extension as strikethrough_extension
-
-def render_global_toc_(files: Iterable[Path]) -> str:
-
-	for file in files:
-		pass
-
-def common_prefix(p1: Path, p2: Path) -> int:
-	p1_parts = p1.parts
-	p2_parts = p2.parts
-	for i in range(min(len(p1_parts), len(p2_parts))):
-		if p1_parts[i] != p2_parts[i]:
-			break
-	return i
-
-def render_global_toc(files: Iterable[Path]) -> str:
-	content = ['<ul>\n']
-	depth = 0
-	prev = Path()
-	for file in files:
-
-		parts = len(file.parts)-2
-
-		if parts == depth:
-			if file.parent != prev.parent:
-				depth = common_prefix(file.parent, prev.parent)
-				content.append(f'<a href="{file.name}">{file.parts[depth+1]}</a>\n')
-
-		else:
-			while parts > depth:
-				content.append(f'<a href="{file.name}">{file.parts[depth+1]}</a>\n')
-				content.append(f'<li>\n<ul>\n')
-				depth += 1
-
-			while parts < depth:
-				content.append('</ul>\n</li>\n')
-				depth -= 1
-
-		prev = file
-		content.append(f'<li><a href="{file.name}">{file.name}</a></li>\n')
-
-	while depth > 0:
-			content.append('</ul>\n</li>\n')
-			depth -= 1
-
-	content.append('</ul>')
-
-	return str.join('', content)
 
 def main(args) -> None:
 
@@ -66,11 +17,8 @@ def main(args) -> None:
 			note_extension.make_extension(),
 			include_extension.make_extension(),
 			codehilite.make_extension(),
-			heading_section_extension.make_extension(),
-			jira_extension.make_extension(),
 			toc.make_extension('<li><ul>', '</li></ul>'),
 			table_extension.make_extension(),
-			strikethrough_extension.make_extension(),
 		]
 	)
 
@@ -88,9 +36,34 @@ def main(args) -> None:
 
 	markdown_files = sorted(notes.rglob('*.md'))
 
-	global_toc = render_global_toc(markdown_files)
+	tree = prefix_tree.Tree(md_file.with_suffix('').parts for md_file in markdown_files)
 
-	for file in notes.rglob('*'):
+	res = list[str]()
+	res.append('<ul>')
+
+	for element in tree:
+		match element:
+			case prefix_tree.Down(v):
+				res.append('<li class="_expand">')
+				res.append(str(v).replace('-', ' ').title())
+				res.append('<ul>')
+			case prefix_tree.Up():
+				res.append('</ul>')
+				res.append('</li>')
+			case v:
+				res.append('<li class="_expand">')
+				res.append(f'<a href="{Path(dist, *v).with_suffix(".html").absolute().as_uri()}">')
+				res.append(v[-1].removesuffix('.md').replace('-', ' ').title())
+				res.append('</a>')
+				res.append('</li>')
+
+	res.append('</ul>')
+
+	global_toc = str.join('\n', res)
+
+	# global_toc = render_global_toc(markdown_files)
+
+	for file in args.files or notes.rglob('*'):
 
 		if file.is_dir():
 			continue
@@ -116,19 +89,20 @@ def main(args) -> None:
 		with output_filepath.with_suffix('.html').open('w', encoding='utf-8') as output:
 			_ = output.write(
 				template.render(
-					static=PurePosixPath(root).relative_to(output_filepath.parent, walk_up=True),
-					# global_toc=global_toc,
+					title=file.stem.replace('-', ' ').title(),
+					static=root.absolute().as_uri(),
+					global_toc=global_toc,
 					body=text,
 					toc=_toc.removeprefix('<li>').removesuffix('</li>'),
 				)
 			)
-
-		# print(output_filepath)
 
 
 if __name__ == '__main__':
 	from argparse import ArgumentParser
 
 	parser = ArgumentParser()
+
+	parser.add_argument('files', default=None, nargs='*', type=Path)
 
 	main(parser.parse_args())
